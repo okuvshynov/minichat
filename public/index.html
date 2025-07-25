@@ -119,30 +119,38 @@
             background: white;
         }
         
+        .input-wrapper {
+            position: relative;
+            height: 36px;
+        }
+        
         .input-wrapper textarea {
-            width: 75%;
-            padding: 6px;
+            position: absolute;
+            left: 0;
+            top: 0;
+            right: 70px;
+            height: 32px;
+            padding: 4px;
             border: 1px solid #ddd;
             border-radius: 3px;
             resize: none;
-            min-height: 36px;
             font-family: Arial, sans-serif;
             font-size: 13px;
-            float: left;
             box-sizing: border-box;
         }
         
         .send-btn {
-            width: 23%;
-            padding: 6px 2px;
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: 65px;
+            height: 34px;
+            padding: 4px 2px;
             background: #007bff;
             color: white;
             border: none;
             border-radius: 3px;
             font-size: 12px;
-            float: right;
-            margin-left: 2%;
-            min-height: 36px;
             box-sizing: border-box;
         }
         
@@ -152,10 +160,6 @@
         
         .send-btn:disabled {
             opacity: 0.5;
-        }
-        
-        .input-wrapper {
-            overflow: hidden;
         }
         
         .typing-indicator {
