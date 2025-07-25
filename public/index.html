@@ -73,9 +73,20 @@
             bottom: 60px;
             left: 0;
             right: 0;
-            overflow-y: auto;
+            overflow: auto;
+            overflow-y: scroll;
             padding: 8px;
             -webkit-overflow-scrolling: touch;
+            /* Fix for old iOS Safari scrolling */
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
+            /* Force scrollbar visibility on old iOS */
+            -webkit-appearance: none;
+            /* Ensure touch events work */
+            -webkit-user-select: none;
+            user-select: none;
+            /* Minimum height to ensure scrolling works */
+            min-height: 100%;
         }
         
         .chat-container.no-header {
@@ -233,7 +244,14 @@
             
             var typingIndicator = document.getElementById('typingIndicator');
             chatContainer.insertBefore(messageDiv, typingIndicator);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            
+            // Enhanced scroll-to-bottom for old iOS Safari
+            setTimeout(function() {
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+                // Force repaint on old WebKit
+                chatContainer.style.webkitTransform = 'translateZ(0)';
+            }, 10);
+            
             return messageDiv;
         }
         
@@ -313,8 +331,11 @@
                                     } else {
                                         contentDiv.innerText = assistantMessage;
                                     }
+                                    // Enhanced scroll for old iOS Safari during streaming
                                     var chatContainer = document.getElementById('chatContainer');
-                                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                                    setTimeout(function() {
+                                        chatContainer.scrollTop = chatContainer.scrollHeight;
+                                    }, 1);
                                 }
                             } catch (e) {
                                 // Ignore parse errors
@@ -399,9 +420,47 @@
             xhr.send();
         }
 
+        // Fix scrolling on old iOS Safari
+        function enableScrolling() {
+            var chatContainer = document.getElementById('chatContainer');
+            if (chatContainer) {
+                // Force scrolling to work on old iOS
+                chatContainer.style.webkitOverflowScrolling = 'touch';
+                
+                // Add touch event handlers for old iOS Safari
+                var isScrolling = false;
+                var startY = 0;
+                
+                chatContainer.addEventListener('touchstart', function(e) {
+                    startY = e.touches[0].pageY;
+                    isScrolling = false;
+                }, false);
+                
+                chatContainer.addEventListener('touchmove', function(e) {
+                    var currentY = e.touches[0].pageY;
+                    var deltaY = startY - currentY;
+                    
+                    // Allow scrolling and prevent page bounce
+                    if (Math.abs(deltaY) > 5) {
+                        isScrolling = true;
+                        chatContainer.scrollTop += deltaY;
+                        startY = currentY;
+                        e.preventDefault();
+                    }
+                }, false);
+                
+                chatContainer.addEventListener('touchend', function(e) {
+                    if (isScrolling) {
+                        e.preventDefault();
+                    }
+                }, false);
+            }
+        }
+
         // Focus on input when page loads and check server config
         window.onload = function() {
             checkServerConfig();
+            enableScrolling();
             var input = document.getElementById('messageInput');
             if (input && input.focus) {
                 setTimeout(function() { input.focus(); }, 100);
