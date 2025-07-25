@@ -10,11 +10,18 @@ This is a minimal web UI for OpenAI-like API chat completion. The application co
 
 Start the server with required command line arguments:
 ```bash
-node server.js <api-base-url> <interface> <port>
+node server.js <api-base-url> <interface> <port> [api-key]
 ```
 
-Example:
+Examples:
 ```bash
+# With CLI API key
+node server.js https://api.openai.com 127.0.0.1 3000 sk-your-key
+
+# With environment variable
+MINICHAT_API_KEY=sk-your-key node server.js https://api.openai.com 127.0.0.1 3000
+
+# Without server-side key (user enters in UI)
 node server.js https://api.openai.com 127.0.0.1 3000
 ```
 
@@ -39,6 +46,8 @@ npm start
 
 - The server acts as a proxy, forwarding chat requests to any OpenAI-compatible API
 - Streaming is implemented using Server-Sent Events from server to client
-- API keys are handled client-side and passed through the server to the external API
+- API keys can be configured server-side (CLI arg or `MINICHAT_API_KEY` env var) or client-side
+- When server-side API key is configured, the UI API key input is hidden
+- The `/api/config` endpoint tells the frontend whether a server-side API key is configured
 - The frontend maintains conversation history in memory (cleared on page refresh)
 - Uses ES modules (`"type": "module"` in package.json)

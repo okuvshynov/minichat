@@ -6,22 +6,34 @@ app.use(express.static('public'));
 
 const args = process.argv.slice(2);
 if (args.length < 3) {
-  console.error('Usage: node server.js <api-base-url> <interface> <port>');
+  console.error('Usage: node server.js <api-base-url> <interface> <port> [api-key]');
   console.error('Example: node server.js https://api.openai.com 127.0.0.1 3000');
+  console.error('API key can also be set via MINICHAT_API_KEY environment variable');
   process.exit(1);
 }
 
-const [apiBaseUrl, interface_, port] = args;
+const [apiBaseUrl, interface_, port, cliApiKey] = args;
+const serverApiKey = cliApiKey || process.env.MINICHAT_API_KEY;
+
+// Endpoint to check if API key is configured server-side
+app.get('/api/config', (req, res) => {
+  res.json({ hasApiKey: !!serverApiKey });
+});
 
 app.post('/api/chat', async (req, res) => {
   try {
     const { messages, apiKey } = req.body;
+    const finalApiKey = serverApiKey || apiKey;
+    
+    if (!finalApiKey) {
+      return res.status(400).json({ error: 'API key is required' });
+    }
     
     const response = await fetch(`${apiBaseUrl}/v1/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
+        'Authorization': `Bearer ${finalApiKey}`,
       },
       body: JSON.stringify({
         model: 'gpt-3.5-turbo',
@@ -85,4 +97,9 @@ app.post('/api/chat', async (req, res) => {
 app.listen(parseInt(port), interface_, () => {
   console.log(`Server running at http://${interface_}:${port}`);
   console.log(`API Base URL: ${apiBaseUrl}`);
+  if (serverApiKey) {
+    console.log('API key configured server-side');
+  } else {
+    console.log('API key will be required from client');
+  }
 });
