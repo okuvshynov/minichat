@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat UI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Chat</title>
     <style>
         * {
             margin: 0;
@@ -12,52 +12,55 @@
         }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: Arial, Helvetica, sans-serif;
             background: #f5f5f5;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
+            height: 100%;
+            min-height: 100%;
         }
         
         .container {
-            max-width: 800px;
-            margin: 0 auto;
             width: 100%;
             height: 100%;
-            display: flex;
-            flex-direction: column;
+            min-height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
             background: white;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
         
         .header {
-            padding: 15px 20px;
+            padding: 10px;
             border-bottom: 1px solid #e0e0e0;
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
+            text-align: right;
+            position: relative;
         }
         
         .api-key-input {
-            display: flex;
-            gap: 10px;
-            align-items: center;
+            display: block;
+        }
+        
+        .api-key-input label {
+            display: inline-block;
+            margin-right: 5px;
+            font-size: 12px;
         }
         
         .api-key-input input {
-            padding: 8px;
+            padding: 6px;
             border: 1px solid #ddd;
-            border-radius: 4px;
-            width: 250px;
+            border-radius: 3px;
+            width: 120px;
+            font-size: 12px;
+            margin-right: 5px;
         }
         
         .clear-btn {
-            padding: 8px 16px;
+            padding: 6px 10px;
             background: #dc3545;
             color: white;
             border: none;
-            border-radius: 4px;
-            cursor: pointer;
+            border-radius: 3px;
+            font-size: 12px;
         }
         
         .clear-btn:hover {
@@ -65,25 +68,32 @@
         }
         
         .chat-container {
-            flex: 1;
+            position: absolute;
+            top: 50px;
+            bottom: 80px;
+            left: 0;
+            right: 0;
             overflow-y: auto;
-            padding: 20px;
+            padding: 10px;
+            -webkit-overflow-scrolling: touch;
         }
         
         .message {
-            margin-bottom: 20px;
-            display: flex;
-            gap: 10px;
+            margin-bottom: 15px;
         }
         
         .message-role {
             font-weight: bold;
-            min-width: 80px;
+            font-size: 14px;
+            display: block;
+            margin-bottom: 5px;
         }
         
         .message-content {
-            flex: 1;
             white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 14px;
+            line-height: 1.4;
         }
         
         .user .message-role {
@@ -95,33 +105,38 @@
         }
         
         .input-container {
-            padding: 20px;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 10px;
             border-top: 1px solid #e0e0e0;
-        }
-        
-        .input-wrapper {
-            display: flex;
-            gap: 10px;
+            background: white;
         }
         
         .input-wrapper textarea {
-            flex: 1;
-            padding: 10px;
+            width: 70%;
+            padding: 8px;
             border: 1px solid #ddd;
-            border-radius: 4px;
+            border-radius: 3px;
             resize: none;
-            min-height: 60px;
-            font-family: inherit;
+            min-height: 40px;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            float: left;
         }
         
         .send-btn {
-            padding: 10px 20px;
+            width: 25%;
+            padding: 8px 5px;
             background: #007bff;
             color: white;
             border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            align-self: flex-end;
+            border-radius: 3px;
+            font-size: 14px;
+            float: right;
+            margin-left: 5%;
+            min-height: 40px;
         }
         
         .send-btn:hover:not(:disabled) {
@@ -130,7 +145,10 @@
         
         .send-btn:disabled {
             opacity: 0.5;
-            cursor: not-allowed;
+        }
+        
+        .input-wrapper {
+            overflow: hidden;
         }
         
         .typing-indicator {
@@ -171,13 +189,19 @@
     </div>
     
     <script>
-        let messages = [];
-        let isStreaming = false;
-        let hasServerApiKey = false;
+        var messages = [];
+        var isStreaming = false;
+        var hasServerApiKey = false;
         
         function handleKeyDown(event) {
-            if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault();
+            event = event || window.event;
+            var keyCode = event.keyCode || event.which;
+            if (keyCode === 13 && !event.shiftKey) {
+                if (event.preventDefault) {
+                    event.preventDefault();
+                } else {
+                    event.returnValue = false;
+                }
                 sendMessage();
             }
         }
@@ -188,29 +212,35 @@
         }
         
         function addMessage(role, content) {
-            const chatContainer = document.getElementById('chatContainer');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${role}`;
-            messageDiv.innerHTML = `
-                <div class="message-role">${role === 'user' ? 'User:' : 'Assistant:'}</div>
-                <div class="message-content">${escapeHtml(content)}</div>
-            `;
-            chatContainer.insertBefore(messageDiv, document.getElementById('typingIndicator'));
+            var chatContainer = document.getElementById('chatContainer');
+            var messageDiv = document.createElement('div');
+            messageDiv.className = 'message ' + role;
+            
+            var roleText = (role === 'user') ? 'User:' : 'Assistant:';
+            messageDiv.innerHTML = '<div class="message-role">' + roleText + '</div>' +
+                                   '<div class="message-content">' + escapeHtml(content) + '</div>';
+            
+            var typingIndicator = document.getElementById('typingIndicator');
+            chatContainer.insertBefore(messageDiv, typingIndicator);
             chatContainer.scrollTop = chatContainer.scrollHeight;
             return messageDiv;
         }
         
         function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
+            var div = document.createElement('div');
+            if (div.textContent !== undefined) {
+                div.textContent = text;
+            } else {
+                div.innerText = text;
+            }
             return div.innerHTML;
         }
         
-        async function sendMessage() {
-            const input = document.getElementById('messageInput');
-            const apiKeyInput = document.getElementById('apiKey');
-            const apiKey = apiKeyInput ? apiKeyInput.value : '';
-            const message = input.value.trim();
+        function sendMessage() {
+            var input = document.getElementById('messageInput');
+            var apiKeyInput = document.getElementById('apiKey');
+            var apiKey = apiKeyInput ? apiKeyInput.value : '';
+            var message = input.value.replace(/^\s+|\s+$/g, ''); // trim for old browsers
             
             if (!message || isStreaming) return;
             
@@ -226,95 +256,132 @@
             addMessage('user', message);
             input.value = '';
             
-            const typingIndicator = document.getElementById('typingIndicator');
-            typingIndicator.classList.add('active');
+            var typingIndicator = document.getElementById('typingIndicator');
+            if (typingIndicator.classList) {
+                typingIndicator.classList.add('active');
+            } else {
+                typingIndicator.className += ' active';
+            }
             
-            let assistantMessage = '';
-            let assistantDiv = null;
+            var assistantMessage = '';
+            var assistantDiv = null;
+            var processedLength = 0;
             
-            try {
-                const response = await fetch('/api/chat', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        messages,
-                        apiKey: hasServerApiKey ? undefined : apiKey
-                    }),
-                });
-                
-                if (!response.ok) {
-                    throw new Error('Failed to get response');
-                }
-                
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
-                
-                assistantDiv = addMessage('assistant', '');
-                const contentDiv = assistantDiv.querySelector('.message-content');
-                
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/api/chat', true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 3 || xhr.readyState === 4) {
+                    // Handle streaming response
+                    if (!assistantDiv) {
+                        assistantDiv = addMessage('assistant', '');
+                    }
                     
-                    const chunk = decoder.decode(value);
-                    const lines = chunk.split('\n');
+                    var contentDiv = assistantDiv.getElementsByClassName('message-content')[0];
+                    var responseText = xhr.responseText;
                     
-                    for (const line of lines) {
-                        if (line.startsWith('data: ')) {
-                            const data = line.slice(6);
+                    // Only process new data since last update
+                    var newData = responseText.substring(processedLength);
+                    processedLength = responseText.length;
+                    
+                    var lines = newData.split('\n');
+                    
+                    for (var i = 0; i < lines.length; i++) {
+                        var line = lines[i];
+                        if (line.indexOf('data: ') === 0) {
+                            var data = line.substring(6);
                             if (data === '[DONE]') continue;
                             
                             try {
-                                const parsed = JSON.parse(data);
+                                var parsed = JSON.parse(data);
                                 if (parsed.content) {
                                     assistantMessage += parsed.content;
-                                    contentDiv.textContent = assistantMessage;
-                                    document.getElementById('chatContainer').scrollTop = 
-                                        document.getElementById('chatContainer').scrollHeight;
+                                    if (contentDiv.textContent !== undefined) {
+                                        contentDiv.textContent = assistantMessage;
+                                    } else {
+                                        contentDiv.innerText = assistantMessage;
+                                    }
+                                    var chatContainer = document.getElementById('chatContainer');
+                                    chatContainer.scrollTop = chatContainer.scrollHeight;
                                 }
                             } catch (e) {
-                                console.error('Error parsing data:', e);
+                                // Ignore parse errors
                             }
                         }
                     }
+                    
+                    if (xhr.readyState === 4) {
+                        // Request complete
+                        messages.push({ role: 'assistant', content: assistantMessage });
+                        
+                        if (typingIndicator.classList) {
+                            typingIndicator.classList.remove('active');
+                        } else {
+                            typingIndicator.className = typingIndicator.className.replace(' active', '');
+                        }
+                        
+                        isStreaming = false;
+                        document.getElementById('sendBtn').disabled = false;
+                        var messageInput = document.getElementById('messageInput');
+                        if (messageInput && messageInput.focus) {
+                            messageInput.focus();
+                        }
+                    }
                 }
-                
-                messages.push({ role: 'assistant', content: assistantMessage });
-                
-            } catch (error) {
-                console.error('Error:', error);
+            };
+            
+            xhr.onerror = function() {
                 if (!assistantDiv) {
                     addMessage('assistant', 'Error: Failed to get response');
                 }
-            } finally {
-                typingIndicator.classList.remove('active');
+                
+                if (typingIndicator.classList) {
+                    typingIndicator.classList.remove('active');
+                } else {
+                    typingIndicator.className = typingIndicator.className.replace(' active', '');
+                }
+                
                 isStreaming = false;
                 document.getElementById('sendBtn').disabled = false;
-                document.getElementById('messageInput').focus();
-            }
+            };
+            
+            var requestData = {
+                messages: messages,
+                apiKey: hasServerApiKey ? undefined : apiKey
+            };
+            
+            xhr.send(JSON.stringify(requestData));
         }
         
-        async function checkServerConfig() {
-            try {
-                const response = await fetch('/api/config');
-                const config = await response.json();
-                hasServerApiKey = config.hasApiKey;
-                
-                const apiKeyContainer = document.querySelector('.api-key-input');
-                if (hasServerApiKey) {
-                    apiKeyContainer.style.display = 'none';
+        function checkServerConfig() {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', '/api/config', true);
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    try {
+                        var config = JSON.parse(xhr.responseText);
+                        hasServerApiKey = config.hasApiKey;
+                        
+                        var apiKeyContainer = document.getElementsByClassName('api-key-input')[0];
+                        if (hasServerApiKey && apiKeyContainer) {
+                            apiKeyContainer.style.display = 'none';
+                        }
+                    } catch (e) {
+                        console && console.log && console.log('Failed to parse config');
+                    }
                 }
-            } catch (error) {
-                console.error('Failed to check server config:', error);
-            }
+            };
+            xhr.send();
         }
 
         // Focus on input when page loads and check server config
-        window.onload = async () => {
-            await checkServerConfig();
-            document.getElementById('messageInput').focus();
+        window.onload = function() {
+            checkServerConfig();
+            var input = document.getElementById('messageInput');
+            if (input && input.focus) {
+                setTimeout(function() { input.focus(); }, 100);
+            }
         };
     </script>
 </body>
